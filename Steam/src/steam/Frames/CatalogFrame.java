@@ -1,14 +1,11 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package steam.Frames;
 
 import java.awt.*;
+import java.io.IOException;
+import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.util.ArrayList;
-import java.util.List;
+import steam.Steam;
 
 /**
  *
@@ -16,64 +13,80 @@ import java.util.List;
  */
 public class CatalogFrame extends JFrame {
 
+    private final Steam steam;
+    private final JPanel content;
+    private final JComboBox<String> cbSO;
+    private final JTextField txtBuscar;
 
-    public CatalogFrame() {
-        
+    public CatalogFrame(Steam steam) {
+        this.steam = steam;
+
         setTitle("Catálogo de Videojuegos");
         setSize(1100, 760);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT)); 
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
         top.setBorder(new EmptyBorder(12, 12, 12, 12));
         
-        top.add(new JLabel("Filtrar por SO:")); 
-        top.add(new JComboBox<>(new String[]{"Todos", "Windows", "Mac", "Linux"})); 
+        top.add(new JLabel("Filtrar por SO:"));
+        cbSO = new JComboBox<>(new String[]{"Todos", "Windows", "Mac", "Linux"});
+        top.add(cbSO);
         
         top.add(Box.createHorizontalStrut(20));
         top.add(new JLabel("Buscar por Título:"));
-        top.add(new JTextField(20));
-        
+        txtBuscar = new JTextField(20);
+        top.add(txtBuscar);
+
         add(top, BorderLayout.NORTH);
 
-        JPanel content = new JPanel(); 
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS)); 
+        content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBorder(new EmptyBorder(12, 12, 12, 12));
         
-
         JScrollPane sp = new JScrollPane(content);
         add(sp, BorderLayout.CENTER);
+
+        cargarCatalogo();
     }
-    
-    private JPanel createGamePanel(String titleText, String detailText, double price) {
-        JPanel p = new JPanel(new BorderLayout()); 
-        p.setBorder(BorderFactory.createLineBorder(Color.GRAY)); 
-        p.setPreferredSize(new Dimension(1020, 140));
+    private void cargarCatalogo() {
+        content.removeAll();
 
-        JLabel img = new JLabel("[Imagen]", SwingConstants.CENTER); 
-        img.setPreferredSize(new Dimension(180, 120)); 
-        img.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        p.add(img, BorderLayout.WEST);
-        
-        JPanel info = new JPanel(); 
-        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS)); 
-        info.setBorder(new EmptyBorder(12, 12, 12, 12));
-        
-        JLabel title = new JLabel(titleText); 
-        title.setFont(title.getFont().deriveFont(16f)); 
-        info.add(title);
-        
-        info.add(new JLabel(detailText)); 
-        info.add(Box.createVerticalStrut(8));
-        
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        
-        btnPanel.add(new JButton("Descargar ($" + String.format("%.2f", price) + ")")); 
+        try {
+            ArrayList<JPanel> gamePanels = steam.getGamePanels();
 
-        p.add(info, BorderLayout.CENTER);
-        p.add(btnPanel, BorderLayout.EAST);
-        
-        return p;
+            if (gamePanels.isEmpty()) {
+                JLabel lbl = new JLabel("No hay juegos registrados aún.");
+                lbl.setFont(lbl.getFont().deriveFont(16f));
+                content.add(lbl);
+            } else {
+                for (JPanel gamePanel : gamePanels) {
+                    JPanel wrapper = new JPanel(new BorderLayout());
+                    wrapper.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                    wrapper.setMaximumSize(new Dimension(1020, 180));
+                    wrapper.setBackground(Color.WHITE);
+
+                    wrapper.add(gamePanel, BorderLayout.CENTER);
+
+                    JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+                    btnPanel.setOpaque(false);
+                    JButton btnDownload = new JButton("Descargar");
+                    btnPanel.add(btnDownload);
+
+                    wrapper.add(btnPanel, BorderLayout.SOUTH);
+
+                    content.add(wrapper);
+                    content.add(Box.createVerticalStrut(10));
+                }
+            }
+        } catch (IOException e) {
+            JLabel lblError = new JLabel("Error al cargar el catálogo: " + e.getMessage());
+            lblError.setForeground(Color.RED);
+            content.add(lblError);
+        }
+
+        content.revalidate();
+        content.repaint();
     }
 }

@@ -19,8 +19,8 @@ public class AdminFrame extends JFrame {
     private JPanel centerPanel;
     private Steam steam;
 
-    public AdminFrame() {
-        steam = new Steam();
+    public AdminFrame(Steam steam) {
+        this.steam = new Steam();
         setTitle("ADMIN - Panel Principal");
         setSize(1200, 800);
         setLocationRelativeTo(null);
@@ -240,13 +240,5 @@ public class AdminFrame extends JFrame {
                     .append(": ").append(e.getMessage());
         }
         return sb.toString();
-    }
-
-    public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-        }
-        SwingUtilities.invokeLater(() -> new AdminFrame().setVisible(true));
     }
 }

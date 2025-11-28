@@ -1,29 +1,27 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package steam;
+package steam.Frames;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.*;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import steam.Frames.AdminFrame;
+import steam.Frames.UserFrame;
+import steam.Steam;
 
-/**
- *
- * @author esteb
- */
 public class SteamLogin extends JFrame {
 
     private JTextField txtUser;
     private JPasswordField txtPass;
+    private final Steam steam;  
+
+    private static final String ADMIN_USER = "admin";
+    private static final String ADMIN_PASS = "1234";   
 
     public SteamLogin() {
+        
+        steam = new Steam(); 
+        
         setTitle("Steam - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 600);
@@ -80,16 +78,47 @@ public class SteamLogin extends JFrame {
 
         add(panel);
 
-        btnLogin.addActionListener(e -> {
-        });
+        btnLogin.addActionListener(e -> doLogin());
     }
 
-    public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ex) {
+    private void doLogin() {
+        String user = txtUser.getText().trim();
+        String pass = new String(txtPass.getPassword());
+
+        if (user.equalsIgnoreCase(ADMIN_USER) && pass.equals(ADMIN_PASS)) {
+            JOptionPane.showMessageDialog(this, "Bienvenido Administrador.");
+            new AdminFrame(steam).setVisible(true);
+            this.dispose();
+            return;
         }
 
-        SwingUtilities.invokeLater(() -> new SteamLogin().setVisible(true));
+        try (RandomAccessFile raf = new RandomAccessFile("steam/rplayers", "r")) {
+
+            while (raf.getFilePointer() < raf.length()) {
+
+                int code = raf.readInt();
+                String username = raf.readUTF();
+                String password = raf.readUTF();
+                String nombre = raf.readUTF();
+                long nacimiento = raf.readLong();
+                int cont = raf.readInt();
+                String imagen = raf.readUTF();
+                String tipo = raf.readUTF();
+
+                if (username.equals(user) && password.equals(pass)) {
+                    JOptionPane.showMessageDialog(this, "Bienvenido " + nombre);
+                    new UserFrame(steam /*, code */).setVisible(true);
+                    this.dispose();
+                    return;
+                }
+            }
+
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Error al leer archivo de usuarios:\n" + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.",
+                "Acceso denegado", JOptionPane.ERROR_MESSAGE);
     }
 }

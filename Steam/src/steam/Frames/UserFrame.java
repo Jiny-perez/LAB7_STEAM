@@ -1,12 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package steam.Frames;
 
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import steam.Steam;   // <-- IMPORTANTE
 
 /**
  *
@@ -14,7 +11,15 @@ import javax.swing.border.EmptyBorder;
  */
 public class UserFrame extends JFrame {
     
-    public UserFrame() { 
+    private final Steam steam;   // referencia a la lógica
+    // opcional: podrías guardar también el código del usuario logueado
+    // private final int userCode;
+
+    // Constructor recibiendo la instancia de Steam
+    public UserFrame(Steam steam /*, int userCode */) { 
+        this.steam = steam;
+        // this.userCode = userCode;
+
         setTitle("STEAM Clone - Panel Principal de Usuario");
         setSize(1100, 760);
         setLocationRelativeTo(null);
@@ -52,37 +57,38 @@ public class UserFrame extends JFrame {
 
         JPanel center = new JPanel(new BorderLayout());
         center.setBorder(new EmptyBorder(20, 20, 20, 20));
-        //JLabel lblCenter = new JLabel("Bienvenido, " + user.getName() + " (" + user.getUsername() + ")");
-        //lblCenter.setFont(lblCenter.getFont().deriveFont(16f));
-        //center.add(lblCenter, BorderLayout.NORTH);
+        // Si tuvieras un objeto User:
+        // JLabel lblCenter = new JLabel("Bienvenido, " + user.getName() + " (" + user.getUsername() + ")");
+        // lblCenter.setFont(lblCenter.getFont().deriveFont(16f));
+        // center.add(lblCenter, BorderLayout.NORTH);
         
         JTextArea ta = new JTextArea();
         ta.setEditable(false);
         ta.setFont(ta.getFont().deriveFont(14f));
-        ta.setText("Aquí se mostrará un resumen de la actividad del usuario (ej. juegos más recientes, recomendaciones, etc.).");
+        ta.setText("Aquí se mostrará un resumen de la actividad del usuario "
+                + "(ej. juegos más recientes, recomendaciones, etc.).");
         center.add(new JScrollPane(ta), BorderLayout.CENTER);
 
         add(left, BorderLayout.WEST);
         add(center, BorderLayout.CENTER);
         
-        
+        // 1. Ver catálogo: ahora sí abre el catálogo REAL con imágenes
         btnCatalog.addActionListener(e -> {
-           //new CatalogFrame().setVisible(true);
+            new CatalogFrame(steam).setVisible(true);
         });
         
-        // 2. Descargar Videojuego: Muestra un mensaje pendiente
+        // 2. Descargar Videojuego: luego lo conectamos a steam.downdloadGame(...)
         btnDownload.addActionListener(e -> {
             JOptionPane.showMessageDialog(this, "Descarga: funcionalidad pendiente de implementar.");
         });
         
-        // 3. Ver Juegos Descargados: Abre la ventana de Descargas, pasando el usuario
+        // 3. Ver Juegos Descargados
         btnViewDownloaded.addActionListener(e -> {
-            //new UserDownloadsFrame(user).setVisible(true);
+            // new UserDownloadsFrame(steam, userCode).setVisible(true);
         });
         
-        // 4. Configurar Perfil: Abre la ventana de Perfil, pasando el usuario
+        // 4. Configurar Perfil
         btnProfile.addActionListener(e -> {
-            //new UserProfileFrame(user).setVisible(true);
         });
         
         btnCounter.addActionListener(e -> {
@@ -90,10 +96,7 @@ public class UserFrame extends JFrame {
         });
         
         btnLogout.addActionListener(e -> {
+            dispose();
         });
-    }
-    
-    public static void main(String[] args) {
-        new UserFrame().setVisible(true);
     }
 }
