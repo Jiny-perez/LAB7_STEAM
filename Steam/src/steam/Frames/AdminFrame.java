@@ -8,12 +8,19 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import steam.Steam;
 
+/**
+ *
+ * @author esteb
+ */
 public class AdminFrame extends JFrame {
 
-    private JPanel centerPanel; 
+    private JPanel centerPanel;
+    private Steam steam;
 
     public AdminFrame() {
+        steam = new Steam();
         setTitle("ADMIN - Panel Principal");
         setSize(1200, 800);
         setLocationRelativeTo(null);
@@ -44,9 +51,9 @@ public class AdminFrame extends JFrame {
 
         Dimension btnSize = new Dimension(260, 40);
         JButton[] buttons = {
-            btnRegPlayer, btnModPlayer, btnDelPlayer, 
-            btnRegGame, btnModGame, btnDelGame, 
-            btnChangePrice, btnViewGames, btnViewReports, 
+            btnRegPlayer, btnModPlayer, btnDelPlayer,
+            btnRegGame, btnModGame, btnDelGame,
+            btnChangePrice, btnViewGames, btnViewReports,
             btnGenReport, btnViewDownloads
         };
 
@@ -59,97 +66,187 @@ public class AdminFrame extends JFrame {
 
         centerPanel = new JPanel(new BorderLayout());
         centerPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        mostrarBienvenida(); 
+        mostrarBienvenida();
 
         add(left, BorderLayout.WEST);
         add(centerPanel, BorderLayout.CENTER);
 
         btnRegPlayer.addActionListener(e -> cambiarPanelCentral(RegistrarPlayer.createPanel()));
         btnModPlayer.addActionListener(e -> cambiarPanelCentral(ModificarPlayer.createPanel()));
-        btnDelPlayer.addActionListener(e -> cambiarPanelCentral(EliminarPlayer.createPanel()));
+        btnDelPlayer.addActionListener(e -> cambiarPanelCentral(EliminarPlayer.createPanel(steam)));
 
         btnRegGame.addActionListener(e -> cambiarPanelCentral(RegistrarJuego.createPanel()));
-        btnModGame.addActionListener(e -> cambiarPanelCentral(ModificarJuego.createPanel()));
-        btnDelGame.addActionListener(e -> cambiarPanelCentral(EliminarJuego.createPanel()));
-        
-        btnChangePrice.addActionListener(e -> cambiarPanelCentral(CambiarPrecio.createPanel()));
-        btnGenReport.addActionListener(e -> cambiarPanelCentral(GenerarReporte.createPanel()));
+        btnModGame.addActionListener(e -> cambiarPanelCentral(ModificarJuego.createPanel(steam)));
+        btnDelGame.addActionListener(e -> cambiarPanelCentral(EliminarJuego.createPanel(steam)));
 
-        // --- PANELES VISORES ---
+        btnChangePrice.addActionListener(e -> cambiarPanelCentral(CambiarPrecio.createPanel(steam)));
+        btnGenReport.addActionListener(e -> cambiarPanelCentral(GenerarReporte.createPanel(steam)));
+
         btnViewGames.addActionListener(e -> mostrarPanelJuegos());
         btnViewReports.addActionListener(e -> cambiarPanelCentral(VerReportes.createPanel()));
-       // btnViewDownloads.addActionListener(e -> cambiarPanelCentral(AdminViewDownloadsFrame.createPanel()));
+
+        btnViewDownloads.addActionListener(e -> mostrarPanelDescargas());
     }
 
-    // -------------------------------------------------------------------------
-    // MÉTODO CENTRAL PARA EL CAMBIO DINÁMICO
-    // -------------------------------------------------------------------------
-
     private void cambiarPanelCentral(JPanel nuevoPanel) {
-        centerPanel.removeAll(); 
-        centerPanel.add(nuevoPanel, BorderLayout.CENTER); 
+        centerPanel.removeAll();
+        centerPanel.add(nuevoPanel, BorderLayout.CENTER);
         centerPanel.revalidate();
         centerPanel.repaint();
     }
 
     private void mostrarBienvenida() {
-        centerPanel.removeAll(); 
+        centerPanel.removeAll();
         JLabel lblCenter = new JLabel("Panel principal de administración");
         lblCenter.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblCenter.setBorder(new EmptyBorder(0, 0, 20, 0));
-        
+
         JTextArea txtArea = new JTextArea();
         txtArea.setEditable(false);
         txtArea.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        txtArea.setText("Bienvenido al sistema Steam Admin.\n\nUsa el menú izquierdo para gestionar Archivos Binarios.");
-        
+        txtArea.setText("Bienvenido al sistema Steam Admin.\n\n"
+                + "Usa el menú izquierdo para gestionar Archivos Binarios.");
+
         centerPanel.add(lblCenter, BorderLayout.NORTH);
         centerPanel.add(new JScrollPane(txtArea), BorderLayout.CENTER);
         centerPanel.revalidate();
         centerPanel.repaint();
     }
-    
+
     private void mostrarPanelJuegos() {
-        centerPanel.removeAll(); 
-        JLabel lblTitulo = new JLabel("Listado de Juegos (Desde Archivo Binario)");
+        centerPanel.removeAll();
+
+        JLabel lblTitulo = new JLabel("Listado de Juegos (steam/games.stm)");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblTitulo.setBorder(new EmptyBorder(0, 0, 15, 0));
+
         JTextArea ta = new JTextArea();
         ta.setEditable(false);
-        ta.setFont(new Font("Monospaced", Font.PLAIN, 14)); 
-        String contenido = cargarDatosDelArchivoBinario();
+        ta.setFont(new Font("Monospaced", Font.PLAIN, 14));
+
+        String contenido = cargarDatosDelArchivoBinarioJuegos();
         ta.setText(contenido);
+
         centerPanel.add(lblTitulo, BorderLayout.NORTH);
         centerPanel.add(new JScrollPane(ta), BorderLayout.CENTER);
         centerPanel.revalidate();
         centerPanel.repaint();
     }
 
-    private String cargarDatosDelArchivoBinario() {
-        File archivo = new File("steam_juegos.dat"); 
+    private String cargarDatosDelArchivoBinarioJuegos() {
+        File archivo = new File("steam/games.stm");
         if (!archivo.exists()) {
-            return "No hay juegos registrados aun (El archivo no existe).\nCrea uno registrando un juego.";
+            return "No hay juegos registrados aún (el archivo steam/games.stm no existe).\n"
+                    + "Registra un juego desde el panel correspondiente.";
         }
-        String texto = ""; 
-        texto = texto + String.format("%-10s | %-25s | %-10s | %-10s\n", "CODIGO", "TITULO", "PRECIO", "EDAD");
-        texto = texto + "----------------------------------------------------------------------\n";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%-8s | %-25s | %-4s | %-10s | %-6s | %-10s%n",
+                "COD", "TITULO", "SO", "PRECIO", "EDAD", "DESCARGAS"));
+        sb.append("-------------------------------------------------------------------------------\n");
 
         try (RandomAccessFile raf = new RandomAccessFile(archivo, "r")) {
             while (raf.getFilePointer() < raf.length()) {
                 int codigo = raf.readInt();
-                String titulo = raf.readUTF(); 
-                double precio = raf.readDouble();
+                String titulo = raf.readUTF();
+                char so = raf.readChar();
                 int edad = raf.readInt();
-                texto = texto + String.format("%-10d | %-25s | $%-9.2f | %-10d\n", codigo, titulo, precio, edad);
+                double precio = raf.readDouble();
+                int contDescargas = raf.readInt();
+                String rutaImg = raf.readUTF();
+
+                sb.append(String.format("%-8d | %-25s | %-4s | $%-9.2f | %-6d | %-10d%n",
+                        codigo, titulo, String.valueOf(so), precio, edad, contDescargas));
             }
         } catch (IOException e) {
-            texto = texto + "ERROR al leer el archivo binario: " + e.getMessage();
+            sb.append("\nERROR al leer steam/games.stm: ").append(e.getMessage());
         }
-        return texto;
+        return sb.toString();
+    }
+
+    private void mostrarPanelDescargas() {
+        centerPanel.removeAll();
+
+        JLabel lblTitulo = new JLabel("Descargas generadas (carpeta steam/downloads)");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblTitulo.setBorder(new EmptyBorder(0, 0, 15, 0));
+
+        JPanel panelDescargas = new JPanel(new BorderLayout(10, 10));
+
+        DefaultListModel<File> modeloLista = new DefaultListModel<>();
+        JList<File> listaArchivos = new JList<>(modeloLista);
+        listaArchivos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        File carpetaDownloads = new File("steam/downloads");
+        if (carpetaDownloads.exists() && carpetaDownloads.isDirectory()) {
+            File[] archivos = carpetaDownloads.listFiles((dir, name) -> name.toLowerCase().endsWith(".stm") || name.toLowerCase().endsWith(".txt"));
+            if (archivos != null && archivos.length > 0) {
+                for (File f : archivos) {
+                    modeloLista.addElement(f);
+                }
+            }
+        }
+
+        listaArchivos.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public java.awt.Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof File) {
+                    File f = (File) value;
+                    setText(f.getName());
+                }
+                return this;
+            }
+        });
+
+        JScrollPane scrollLista = new JScrollPane(listaArchivos);
+        scrollLista.setPreferredSize(new Dimension(260, 0));
+
+        JTextArea taContenido = new JTextArea();
+        taContenido.setEditable(false);
+        taContenido.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        JScrollPane scrollContenido = new JScrollPane(taContenido);
+
+        listaArchivos.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                File seleccionado = listaArchivos.getSelectedValue();
+                if (seleccionado != null) {
+                    taContenido.setText(leerContenidoTexto(seleccionado));
+                    taContenido.setCaretPosition(0);
+                }
+            }
+        });
+
+        panelDescargas.add(scrollLista, BorderLayout.WEST);
+        panelDescargas.add(scrollContenido, BorderLayout.CENTER);
+
+        centerPanel.add(lblTitulo, BorderLayout.NORTH);
+        centerPanel.add(panelDescargas, BorderLayout.CENTER);
+        centerPanel.revalidate();
+        centerPanel.repaint();
+    }
+
+    private String leerContenidoTexto(File archivo) {
+        StringBuilder sb = new StringBuilder();
+        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                sb.append(linea).append(System.lineSeparator());
+            }
+        } catch (IOException e) {
+            sb.append("ERROR al leer archivo ").append(archivo.getName())
+                    .append(": ").append(e.getMessage());
+        }
+        return sb.toString();
     }
 
     public static void main(String[] args) {
-        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception e) {}
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+        }
         SwingUtilities.invokeLater(() -> new AdminFrame().setVisible(true));
     }
 }

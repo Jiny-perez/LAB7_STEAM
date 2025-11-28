@@ -1,17 +1,14 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package steam.Frames;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.IOException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import steam.Steam;
 
 /**
  *
@@ -19,7 +16,7 @@ import javax.swing.border.EmptyBorder;
  */
 public class EliminarPlayer {
 
-    public static JPanel createPanel() {
+    public static JPanel createPanel(Steam steam) {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBorder(new EmptyBorder(30, 30, 30, 30));
 
@@ -38,7 +35,10 @@ public class EliminarPlayer {
         gdc.gridx = 0;
         gdc.gridy = 1;
         gdc.weightx = 0.0;
-        p.add(new JLabel("Código del player:"), gdc);
+        JLabel lblCod = new JLabel("Código del player:");
+        lblCod.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        p.add(lblCod, gdc);
+
         gdc.gridx = 1;
         gdc.weightx = 1.0;
         JTextField txtCodigo = new JTextField();
@@ -51,12 +51,70 @@ public class EliminarPlayer {
         gdc.weightx = 0.0;
         JButton btnDelete = new JButton("Eliminar Player");
         btnDelete.setPreferredSize(new Dimension(220, 44));
+        p.add(btnDelete, gdc);
+
         btnDelete.addActionListener(ae -> {
-            if (!txtCodigo.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(p, "Eliminado usuario: " + txtCodigo.getText());
+            String codStr = txtCodigo.getText().trim();
+
+            if (codStr.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        p,
+                        "Por favor escribe el código del player.",
+                        "Aviso",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            int codigo;
+            try {
+                codigo = Integer.parseInt(codStr);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                        p,
+                        "El código debe ser un número entero válido.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    p,
+                    "¿Seguro que deseas eliminar el player con código: " + codigo + "?\nEsta acción no se puede deshacer.",
+                    "Confirmar Eliminación",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    boolean eliminado = steam.deletePlayer(codigo);
+                    if (eliminado) {
+                        JOptionPane.showMessageDialog(
+                                p,
+                                "Player eliminado exitosamente.",
+                                "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                        txtCodigo.setText("");
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                p,
+                                "No existe un player con el código " + codigo + ".",
+                                "No encontrado",
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                    }
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(
+                            p,
+                            "Error al acceder al archivo de players:\n" + ex.getMessage(),
+                            "Error IO",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
             }
         });
-        p.add(btnDelete, gdc);
 
         return p;
     }

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package steam.Frames;
 
 import java.awt.Dimension;
@@ -9,17 +5,19 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.IOException;
+import java.util.NoSuchElementException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import steam.Steam;  
 
 /**
  *
  * @author esteb
  */
-
 public class CambiarPrecio {
 
-    public static JPanel createPanel() {
+    public static JPanel createPanel(Steam steam) {
         final JTextField txtCodigo = new JTextField();
         final JTextField txtPrecio = new JTextField();
         
@@ -64,23 +62,68 @@ public class CambiarPrecio {
         p.add(btnChange, gdc);
 
         btnChange.addActionListener(e -> {
-            String codigo = txtCodigo.getText();
-            String precio = txtPrecio.getText();
+            String codigo = txtCodigo.getText().trim();
+            String precio = txtPrecio.getText().trim();
             
-            if(codigo.isEmpty() || precio.isEmpty()){
-                JOptionPane.showMessageDialog(p, "Por favor llena todos los campos.", "Error", JOptionPane.WARNING_MESSAGE);
-            } else {
-                try {
-                    double precioNum = Double.parseDouble(precio);
-                    
-                    JOptionPane.showMessageDialog(p, 
-                        "Precio actualizado para el juego " + codigo + " a: $" + String.format("%.2f", precioNum) + " (Simulado)",
-                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                        
-                    
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(p, "El precio debe ser un número válido (ej. 19.99).", "Error", JOptionPane.ERROR_MESSAGE);
+            if (codigo.isEmpty() || precio.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        p,
+                        "Por favor llena todos los campos.",
+                        "Error",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            try {
+                int codigoNum = Integer.parseInt(codigo);
+                double precioNum = Double.parseDouble(precio);
+
+                if (precioNum < 0) {
+                    JOptionPane.showMessageDialog(
+                            p,
+                            "El precio no puede ser negativo.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    return;
                 }
+
+                boolean ok = steam.updatePriceFor(codigoNum, precioNum);
+
+                if (ok) {
+                    JOptionPane.showMessageDialog(
+                            p,
+                            "Precio actualizado para el juego con código " + codigoNum
+                            + " a: $" + String.format("%.2f", precioNum),
+                            "Éxito",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    txtCodigo.setText("");
+                    txtPrecio.setText("");
+                }
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                        p,
+                        "Código y precio deben ser números válidos.\nEjemplo precio: 19.99",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            } catch (NoSuchElementException ex) {
+                JOptionPane.showMessageDialog(
+                        p,
+                        ex.getMessage(),   
+                        "No encontrado",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(
+                        p,
+                        "Error de lectura/escritura en el archivo de juegos:\n" + ex.getMessage(),
+                        "Error IO",
+                        JOptionPane.ERROR_MESSAGE
+                );
             }
         });
         
