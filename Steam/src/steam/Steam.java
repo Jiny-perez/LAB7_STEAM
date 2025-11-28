@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
 package steam;
 
 import java.awt.BorderLayout;
@@ -11,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import javax.swing.ImageIcon;
@@ -33,11 +30,11 @@ public class Steam {
 
             File fl = new File("steam");
             fl.mkdir();
-            fl = new File("steam/download");
+            fl = new File("steam/downloads");
             fl.mkdirs();
 
             rcodes = new RandomAccessFile("steam/codes.stm", "rw");
-            rgames = new RandomAccessFile("steam/rgames.stm", "rw");
+            rgames = new RandomAccessFile("steam/games.stm", "rw");
             rplayers = new RandomAccessFile("steam/rplayers", "rw");
 
             initCodes();
@@ -48,6 +45,7 @@ public class Steam {
 
     private void initCodes() throws IOException {
         if (rcodes.length() == 0) {
+            rcodes.seek(0);
             rcodes.writeInt(1);
             rcodes.writeInt(1);
             rcodes.writeInt(1);
@@ -57,13 +55,13 @@ public class Steam {
     private int getCode(String tipo) throws IOException {
         long pos;
         switch (tipo.toLowerCase()) {
-            case "games":
+            case "game":
                 pos = 0;
                 break;
-            case "players":
+            case "player":
                 pos = 4;
                 break;
-            case "downloads":
+            case "download":
                 pos = 8;
                 break;
             default:
@@ -122,6 +120,168 @@ public class Steam {
         return false;
     }
 
+    public void addGame(String titulo, char so, int edadMinima, double precio, String rutaImg) throws IOException {
+        int code = getCode("game");
+
+        rgames.seek(rgames.length());
+        rgames.writeInt(code);
+        rgames.writeUTF(titulo);
+        rgames.writeChar(so);
+        rgames.writeInt(edadMinima);
+        rgames.writeDouble(precio);
+        rgames.writeInt(0);
+        rgames.writeUTF(rutaImg);
+    }
+
+    public void addPlayer(String username, String password, String nombre, long nacimiento, String rutaImg, String tipo) throws IOException {
+        int code = getCode("player");
+
+        rplayers.seek(rplayers.length());
+        rplayers.writeInt(code);
+        rplayers.writeUTF(username);
+        rplayers.writeUTF(password);
+        rplayers.writeUTF(nombre);
+        rplayers.writeLong(nacimiento);
+        rplayers.writeInt(0);
+        rplayers.writeUTF(rutaImg);
+        rplayers.writeUTF(tipo);
+    }
+
+    public boolean downdloadGame(int codeGame, int codeCliente, char so) throws IOException {
+        boolean existsGame = existsGame(codeGame);
+        boolean existsClient = existsClient(codeCliente);
+
+        if (!existsClient || !existsGame) {
+            return false;
+        }
+
+        rgames.seek(0);
+        String titulo = null;
+        char sistemaOperativo = ' ';
+        int EdadMin = 0;
+        double Precio = 0.0;
+        int gcontDownloads = 0;
+        String grutaImagen = null;
+        long posGameCont = -1;
+        boolean foundGame = false;
+
+        while (rgames.getFilePointer() < rgames.length()) {
+            int codigo = rgames.readInt();
+
+            if (codigo == codeGame) {
+                titulo = rgames.readUTF();
+                sistemaOperativo = rgames.readChar();
+                EdadMin = rgames.readInt();
+                Precio = rgames.readDouble();
+                posGameCont = rgames.getFilePointer();
+                gcontDownloads = rgames.readInt();
+                grutaImagen = rgames.readUTF();
+                foundGame = true;
+                break;
+            } else {
+                rgames.readUTF();
+                rgames.readChar();
+                rgames.readInt();
+                rgames.readDouble();
+                rgames.readInt();
+                rgames.readUTF();
+            }
+        }
+
+        if (!foundGame) {
+            return false;
+        }
+
+        rplayers.seek(0);
+        String username = null;
+        String password = null;
+        String nombreCliente = null;
+        long nacimiento = 0L;
+        int ccontDownloads = 0;
+        String crutaImagen = null;
+        String tipoUsuario = null;
+        long posClienteCont = -1;
+        boolean foundClient = false;
+
+        while (rplayers.getFilePointer() < rplayers.length()) {
+            int readCode = rplayers.readInt();
+            if (readCode == codeCliente) {
+                username = rplayers.readUTF();
+                password = rplayers.readUTF();
+                nombreCliente = rplayers.readUTF();
+                nacimiento = rplayers.readLong();
+                posClienteCont = rplayers.getFilePointer();
+                ccontDownloads = rplayers.readInt();
+                crutaImagen = rplayers.readUTF();
+                tipoUsuario = rplayers.readUTF();
+                foundClient = true;
+                break;
+            } else {
+                rplayers.readUTF();
+                rplayers.readUTF();
+                rplayers.readUTF();
+                rplayers.readLong();
+
+                try {
+                    rplayers.readInt();
+                    rplayers.readUTF();
+                    rplayers.readUTF();
+                } catch (IOException ex) {
+                }
+            }
+        }
+
+        if (!foundClient) {
+            return false;
+        }
+
+        char requestedSO = Character.toUpperCase(so);
+        char providedSO = Character.toUpperCase(sistemaOperativo);
+        if (requestedSO != providedSO) {
+            return false;
+        }
+
+        Calendar fecha = Calendar.getInstance();
+        int yearActual = fecha.get(Calendar.YEAR);
+        fecha.setTimeInMillis(nacimiento);
+        int yearNacimiento = fecha.get(Calendar.YEAR);
+        int anio = yearActual - yearNacimiento;
+
+        Calendar fechaNacimiento = Calendar.getInstance();
+        fechaNacimiento.setTimeInMillis(nacimiento);
+        Calendar hoy = Calendar.getInstance();
+        if (hoy.get(Calendar.MONTH) < fechaNacimiento.get(Calendar.MONTH)  || (hoy.get(Calendar.MONTH) == fechaNacimiento.get(Calendar.MONTH)
+                && hoy.get(Calendar.DAY_OF_MONTH) < fechaNacimiento.get(Calendar.DAY_OF_MONTH))) {
+            anio--;
+        }
+
+        if (anio < EdadMin) {
+            return false;
+        }
+
+        int downloadCode = getCode("download");
+        String downloadFileName = "steam/downloads/download_" + downloadCode + ".stm";
+        PrintWriter pw = new PrintWriter(new FileWriter(downloadFileName));
+        pw.println(new Date());
+        pw.println(grutaImagen);
+        pw.println("Download #" + downloadCode);
+        pw.println(nombreCliente + " ha bajado " + titulo);
+        pw.println("a un precio de $ " + Precio + ".");
+        pw.close();
+
+        if (posGameCont >= 0) {
+            rgames.seek(posGameCont);
+            rgames.writeInt(ccontDownloads + 1);
+        }
+
+        if (posClienteCont >= 0) {
+            rplayers.seek(posClienteCont);
+            rplayers.writeInt(ccontDownloads + 1);
+        }
+
+        return true;
+    }
+
     public boolean updatePriceFor(int code, double precio) throws IOException {
         boolean activo = existsGame(code);
         if (!activo) {
@@ -168,12 +328,12 @@ public class Steam {
 
         while (rgames.getFilePointer() < rgames.length()) {
 
-            int code = rgames.readInt();
+            rgames.readInt();
             String title = rgames.readUTF();
             char os = rgames.readChar();
             int edadMin = rgames.readInt();
-            rgames.readDouble();
-            int cont = rgames.readInt();
+            double precio = rgames.readDouble();
+            rgames.readInt();
             String imagen = rgames.readUTF();
 
             JPanel p = new JPanel();
@@ -183,11 +343,10 @@ public class Steam {
             JLabel lblImg = new JLabel(img);
 
             JTextArea info = new JTextArea(
-                    "Codigo: " + code + "\n"
-                    + "Titulo: " + title + "\n"
+                    "Titulo: " + title + "\n"
                     + "Sistema Operativo: " + os + "\n"
                     + "Edad minima: " + edadMin + "\n"
-                    + "Descargas: " + cont
+                    + "Precio: " + precio
             );
 
             info.setEditable(false);
@@ -203,4 +362,5 @@ public class Steam {
 
         return lista;
     }
+
 }
