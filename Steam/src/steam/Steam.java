@@ -250,7 +250,7 @@ public class Steam {
         Calendar fechaNacimiento = Calendar.getInstance();
         fechaNacimiento.setTimeInMillis(nacimiento);
         Calendar hoy = Calendar.getInstance();
-        if (hoy.get(Calendar.MONTH) < fechaNacimiento.get(Calendar.MONTH)  || (hoy.get(Calendar.MONTH) == fechaNacimiento.get(Calendar.MONTH)
+        if (hoy.get(Calendar.MONTH) < fechaNacimiento.get(Calendar.MONTH) || (hoy.get(Calendar.MONTH) == fechaNacimiento.get(Calendar.MONTH)
                 && hoy.get(Calendar.DAY_OF_MONTH) < fechaNacimiento.get(Calendar.DAY_OF_MONTH))) {
             anio--;
         }
@@ -361,6 +361,126 @@ public class Steam {
         }
 
         return lista;
+    }
+
+    public boolean modificarGame(int newCode, String newTitle, char newOs,
+            int newEdadMin, double newPrecio,
+            int newContDescargas, String newImg)
+            throws IOException {
+
+        RandomAccessFile temp = new RandomAccessFile("steam/games_override.stm", "rw");
+        temp.setLength(0);
+        temp.seek(0);
+
+        rgames.seek(0);
+        boolean seEncontro = false;
+
+        while (rgames.getFilePointer() < rgames.length()) {
+
+            int code = rgames.readInt();
+            String title = rgames.readUTF();
+            char os = rgames.readChar();
+            int edad = rgames.readInt();
+            double precio = rgames.readDouble();
+            int cont = rgames.readInt();
+            String img = rgames.readUTF();
+
+            if (code == code) {
+                temp.writeInt(code);
+                temp.writeUTF(newTitle);
+                temp.writeChar(newOs);
+                temp.writeInt(newEdadMin);
+                temp.writeDouble(newPrecio);
+                temp.writeInt(newContDescargas);
+                temp.writeUTF(newImg);
+                seEncontro = true;
+            } else {
+                temp.writeInt(code);
+                temp.writeUTF(title);
+                temp.writeChar(os);
+                temp.writeInt(edad);
+                temp.writeDouble(precio);
+                temp.writeInt(cont);
+                temp.writeUTF(img);
+            }
+        }
+
+        temp.close();
+
+        if (!seEncontro) {
+            new File("steam/games_tmp.stm").delete();
+            return false;
+        }
+
+        rgames.close();
+        new File("steam/games.stm").delete();
+        new File("steam/games_tmp.stm").renameTo(new File("steam/games.stm"));
+        rgames = new RandomAccessFile("steam/games.stm", "rw");
+
+        return true;
+    }
+
+    public boolean modificarPlayer(int codeBuscado, String newUsername, String newPassword,
+            String newName, long newNacimiento, int newContador,
+            String newImagePath, String newTipoUsuario) throws IOException {
+
+        RandomAccessFile temp = new RandomAccessFile("steam/player_tmp.stm", "rw");
+        temp.setLength(0);
+        temp.seek(0);
+
+        rplayers.seek(0);
+        boolean seEncontro = false;
+
+        while (rplayers.getFilePointer() < rplayers.length()) {
+
+            int code = rplayers.readInt();
+            String username = rplayers.readUTF();
+            String password = rplayers.readUTF();
+            String name = rplayers.readUTF();
+            long nacimiento = rplayers.readLong();
+            int cont = rplayers.readInt();
+            String imagen = rplayers.readUTF();
+            String tipo = rplayers.readUTF();
+
+            if (code == codeBuscado) {
+                temp.writeInt(code);
+                temp.writeUTF(newUsername);
+                temp.writeUTF(newPassword);
+                temp.writeUTF(newName);
+                temp.writeLong(newNacimiento);
+                temp.writeInt(newContador);
+                temp.writeUTF(newImagePath);
+                temp.writeUTF(newTipoUsuario);
+                seEncontro = true;
+            } else {
+                temp.writeInt(code);
+                temp.writeUTF(username);
+                temp.writeUTF(password);
+                temp.writeUTF(name);
+                temp.writeLong(nacimiento);
+                temp.writeInt(cont);
+                temp.writeUTF(imagen);
+                temp.writeUTF(tipo);
+            }
+        }
+
+        temp.close();
+
+        if (!seEncontro) {
+            new File("steam/player_tmp.stm").delete();
+            throw new NoSuchElementException("El jugador con codigo " + codeBuscado + " no existe.");
+        }
+
+        rplayers.close();
+        File original = new File("steam/player.stm");
+        File tmp = new File("steam/player_tmp.stm");
+
+        original.delete();
+        tmp.renameTo(original);
+
+        rplayers = new RandomAccessFile("steam/player.stm", "rw");
+
+        return true;
     }
 
 }
