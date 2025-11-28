@@ -25,7 +25,7 @@ public class Steam {
     RandomAccessFile rgames;
     RandomAccessFile rplayers;
 
-    public Steam() {
+    public  Steam() {
         try {
 
             File fl = new File("steam");
