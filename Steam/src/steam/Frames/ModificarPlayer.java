@@ -84,7 +84,7 @@ public class ModificarPlayer {
             }
 
             try {
-                RandomAccessFile raf = steam.rplayers;
+                RandomAccessFile raf = steam.getRplayers();
                 if (raf == null) {
                     JOptionPane.showMessageDialog(p, "Archivo de players no inicializado.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;

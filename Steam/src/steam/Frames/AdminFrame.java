@@ -71,11 +71,11 @@ public class AdminFrame extends JFrame {
         add(left, BorderLayout.WEST);
         add(centerPanel, BorderLayout.CENTER);
 
-        btnRegPlayer.addActionListener(e -> cambiarPanelCentral(RegistrarPlayer.createPanel()));
-        btnModPlayer.addActionListener(e -> cambiarPanelCentral(ModificarPlayer.createPanel()));
+        btnRegPlayer.addActionListener(e -> cambiarPanelCentral(RegistrarPlayer.createPanel(steam)));
+        btnModPlayer.addActionListener(e -> cambiarPanelCentral(ModificarPlayer.createPanel(steam)));
         btnDelPlayer.addActionListener(e -> cambiarPanelCentral(EliminarPlayer.createPanel(steam)));
 
-        btnRegGame.addActionListener(e -> cambiarPanelCentral(RegistrarJuego.createPanel()));
+        btnRegGame.addActionListener(e -> cambiarPanelCentral(RegistrarJuego.createPanel(steam)));
         btnModGame.addActionListener(e -> cambiarPanelCentral(ModificarJuego.createPanel(steam)));
         btnDelGame.addActionListener(e -> cambiarPanelCentral(EliminarJuego.createPanel(steam)));
 
