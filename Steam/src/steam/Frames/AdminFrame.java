@@ -1,25 +1,25 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package steam.Frames;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-/**
- *
- * @author esteb
- */
-public class AdminFrame extends JFrame{
+public class AdminFrame extends JFrame {
+
+    private JPanel centerPanel; 
+
     public AdminFrame() {
         setTitle("ADMIN - Panel Principal");
         setSize(1200, 800);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+
         JPanel left = new JPanel();
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
         left.setBorder(new EmptyBorder(20, 20, 20, 20));
@@ -41,7 +41,7 @@ public class AdminFrame extends JFrame{
         JButton btnViewReports = new JButton("Ver reportes");
         JButton btnGenReport = new JButton("Generar reporte de cliente");
         JButton btnViewDownloads = new JButton("Ver descargas generadas");
-        
+
         Dimension btnSize = new Dimension(260, 40);
         JButton[] buttons = {
             btnRegPlayer, btnModPlayer, btnDelPlayer, 
@@ -57,35 +57,99 @@ public class AdminFrame extends JFrame{
             left.add(Box.createVerticalStrut(8));
         }
 
+        centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        mostrarBienvenida(); 
 
-        JPanel center = new JPanel(new BorderLayout());
-        center.setBorder(new EmptyBorder(20, 20, 20, 20));
+        add(left, BorderLayout.WEST);
+        add(centerPanel, BorderLayout.CENTER);
+
+        btnRegPlayer.addActionListener(e -> cambiarPanelCentral(RegistrarPlayer.createPanel()));
+        btnModPlayer.addActionListener(e -> cambiarPanelCentral(ModificarPlayer.createPanel()));
+        btnDelPlayer.addActionListener(e -> cambiarPanelCentral(EliminarPlayer.createPanel()));
+
+        btnRegGame.addActionListener(e -> cambiarPanelCentral(RegistrarJuego.createPanel()));
+        btnModGame.addActionListener(e -> cambiarPanelCentral(ModificarJuego.createPanel()));
+        btnDelGame.addActionListener(e -> cambiarPanelCentral(EliminarJuego.createPanel()));
         
-        JLabel lblCenter = new JLabel("Panel principal de administración (vista resumen)");
-        lblCenter.setFont(lblCenter.getFont().deriveFont(16f));
-        center.add(lblCenter, BorderLayout.NORTH);
+        btnChangePrice.addActionListener(e -> cambiarPanelCentral(CambiarPrecio.createPanel()));
+        btnGenReport.addActionListener(e -> cambiarPanelCentral(GenerarReporte.createPanel()));
+
+        // --- PANELES VISORES ---
+        btnViewGames.addActionListener(e -> mostrarPanelJuegos());
+        btnViewReports.addActionListener(e -> cambiarPanelCentral(VerReportes.createPanel()));
+       // btnViewDownloads.addActionListener(e -> cambiarPanelCentral(AdminViewDownloadsFrame.createPanel()));
+    }
+
+    // -------------------------------------------------------------------------
+    // MÉTODO CENTRAL PARA EL CAMBIO DINÁMICO
+    // -------------------------------------------------------------------------
+
+    private void cambiarPanelCentral(JPanel nuevoPanel) {
+        centerPanel.removeAll(); 
+        centerPanel.add(nuevoPanel, BorderLayout.CENTER); 
+        centerPanel.revalidate();
+        centerPanel.repaint();
+    }
+
+    private void mostrarBienvenida() {
+        centerPanel.removeAll(); 
+        JLabel lblCenter = new JLabel("Panel principal de administración");
+        lblCenter.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblCenter.setBorder(new EmptyBorder(0, 0, 20, 0));
         
         JTextArea txtArea = new JTextArea();
         txtArea.setEditable(false);
-        txtArea.setFont(txtArea.getFont().deriveFont(14f));
-        txtArea.setText("Área de resumen / previsualización\n(Placeholder)");
-        center.add(new JScrollPane(txtArea), BorderLayout.CENTER);
+        txtArea.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        txtArea.setText("Bienvenido al sistema Steam Admin.\n\nUsa el menú izquierdo para gestionar Archivos Binarios.");
+        
+        centerPanel.add(lblCenter, BorderLayout.NORTH);
+        centerPanel.add(new JScrollPane(txtArea), BorderLayout.CENTER);
+        centerPanel.revalidate();
+        centerPanel.repaint();
+    }
+    
+    private void mostrarPanelJuegos() {
+        centerPanel.removeAll(); 
+        JLabel lblTitulo = new JLabel("Listado de Juegos (Desde Archivo Binario)");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblTitulo.setBorder(new EmptyBorder(0, 0, 15, 0));
+        JTextArea ta = new JTextArea();
+        ta.setEditable(false);
+        ta.setFont(new Font("Monospaced", Font.PLAIN, 14)); 
+        String contenido = cargarDatosDelArchivoBinario();
+        ta.setText(contenido);
+        centerPanel.add(lblTitulo, BorderLayout.NORTH);
+        centerPanel.add(new JScrollPane(ta), BorderLayout.CENTER);
+        centerPanel.revalidate();
+        centerPanel.repaint();
+    }
 
-        add(left, BorderLayout.WEST);
-        add(center, BorderLayout.CENTER);
+    private String cargarDatosDelArchivoBinario() {
+        File archivo = new File("steam_juegos.dat"); 
+        if (!archivo.exists()) {
+            return "No hay juegos registrados aun (El archivo no existe).\nCrea uno registrando un juego.";
+        }
+        String texto = ""; 
+        texto = texto + String.format("%-10s | %-25s | %-10s | %-10s\n", "CODIGO", "TITULO", "PRECIO", "EDAD");
+        texto = texto + "----------------------------------------------------------------------\n";
 
-        
-        btnRegPlayer.addActionListener(e -> {
-            System.out.println("Abrir Registrar Player");
-        });
-        
-        btnModPlayer.addActionListener(e -> {
-             System.out.println("Abrir Modificar Player");
-        });
-        
+        try (RandomAccessFile raf = new RandomAccessFile(archivo, "r")) {
+            while (raf.getFilePointer() < raf.length()) {
+                int codigo = raf.readInt();
+                String titulo = raf.readUTF(); 
+                double precio = raf.readDouble();
+                int edad = raf.readInt();
+                texto = texto + String.format("%-10d | %-25s | $%-9.2f | %-10d\n", codigo, titulo, precio, edad);
+            }
+        } catch (IOException e) {
+            texto = texto + "ERROR al leer el archivo binario: " + e.getMessage();
+        }
+        return texto;
     }
 
     public static void main(String[] args) {
+        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception e) {}
         SwingUtilities.invokeLater(() -> new AdminFrame().setVisible(true));
     }
 }
